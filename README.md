@@ -124,6 +124,6 @@ start index.html         # Windows
 - **Singleton DB**: conexión IndexedDB cacheada para evitar aperturas repetidas.
 - **Feature detection**: comprueba `SpeechRecognition`, `Camera`, `Hands`, `FaceMesh`.
 
-## Licencia
+## Desarrollado
 
-MIT © 2025 Luis Roce
+Luis Rodriguez

@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NousSense Lab — interfaz natural con reconocimiento de voz, síntesis de habla y visión por cámara con MediaPipe.">
+  <meta name="theme-color" content="#2f3437">
   <title>NousSense Lab · Voz y Cámara</title>
   <link rel="stylesheet" href="assets/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -24,8 +26,8 @@
       <article class="panel">
         <h2>Control de voz</h2>
         <div class="actions">
-          <button id="listenBtn">🎙️ Escuchar</button>
-          <button id="stopListenBtn" class="secondary">Detener</button>
+          <button id="listenBtn" aria-label="Iniciar reconocimiento de voz">🎙️ Escuchar</button>
+          <button id="stopListenBtn" class="secondary" aria-label="Detener reconocimiento de voz">Detener</button>
         </div>
         <label>Texto reconocido
           <textarea id="recognizedText" rows="3" placeholder="Aquí aparecerá la frase reconocida..."></textarea>
@@ -34,8 +36,8 @@
           <input id="speakText" placeholder="Escribe y pulsa hablar o usa comandos de voz">
         </label>
         <div class="actions">
-          <button id="speakBtn" class="secondary">🔊 Hablar</button>
-          <button id="stopSpeakBtn" class="secondary">Silenciar</button>
+          <button id="speakBtn" class="secondary" aria-label="Sintetizar texto a voz">🔊 Hablar</button>
+          <button id="stopSpeakBtn" class="secondary" aria-label="Silenciar síntesis de voz">Silenciar</button>
         </div>
 
         <h3>Comandos de voz soportados</h3>
@@ -51,8 +53,8 @@
       <article class="panel">
         <h2>Visión por cámara</h2>
         <div class="actions">
-          <button id="startCamBtn">📷 Iniciar cámara</button>
-          <button id="stopCamBtn" class="secondary">Apagar cámara</button>
+          <button id="startCamBtn" aria-label="Iniciar cámara">📷 Iniciar cámara</button>
+          <button id="stopCamBtn" class="secondary" aria-label="Apagar cámara">Apagar cámara</button>
         </div>
         <div class="row">
           <label>Modo de detección
@@ -94,5 +96,6 @@
   </main>
 
   <script type="module" src="assets/app.js"></script>
+  <noscript><p style="text-align:center;padding:2rem;">NousSense Lab requiere JavaScript habilitado.</p></noscript>
 </body>
 </html>

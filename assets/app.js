@@ -30,13 +30,17 @@ const el = {
 const state = {
   recognition: null,
   listening: false,
+  stoppingRecognition: false,
   camera: null,
   mode: 'none',
   hands: null,
   faceMesh: null,
+  dbConnection: null,
+  visionReady: false,
 };
 
 function openDb() {
+  if (state.dbConnection) return Promise.resolve(state.dbConnection);
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -59,7 +63,11 @@ function openDb() {
       }
     };
 
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      state.dbConnection = req.result;
+      state.dbConnection.onclose = () => { state.dbConnection = null; };
+      resolve(state.dbConnection);
+    };
   });
 }
 
@@ -69,10 +77,8 @@ async function dbAction(storeName, mode, callback) {
     const tx = db.transaction(storeName, mode);
     const store = tx.objectStore(storeName);
     const request = callback(store);
-
-    request.onerror = () => reject(request.error);
+    tx.onerror = () => reject(tx.error);
     request.onsuccess = () => resolve(request.result);
-    tx.oncomplete = () => db.close();
   });
 }
 
@@ -104,6 +110,7 @@ function clearStore(storeName) {
 
 function setAssistantState(text) {
   el.assistantState.textContent = text;
+  el.assistantState.classList.toggle('listening', state.listening);
 }
 
 function formatDate(iso) {
@@ -149,7 +156,7 @@ async function refreshData() {
     el.capturesGrid.innerHTML = captures.map((row) => `
       <article class="capture">
         <img src="${row.image}" alt="captura">
-        <small>${formatDate(row.createdAt)} · modo ${row.mode}</small>
+        <small>${formatDate(row.createdAt)} · modo ${escapeHtml(row.mode)}</small>
       </article>
     `).join('');
   }
@@ -180,6 +187,13 @@ function setMode(mode) {
 }
 
 async function setupVisionEngines() {
+  if (state.visionReady) return;
+
+  if (typeof Hands === 'undefined' || typeof FaceMesh === 'undefined') {
+    console.warn('MediaPipe no disponible — detección deshabilitada.');
+    return;
+  }
+
   state.hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
   });
@@ -188,6 +202,16 @@ async function setupVisionEngines() {
     modelComplexity: 0,
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5,
+  });
+  state.hands.onResults((results) => {
+    drawFrame(results.image, (ctx) => {
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(ctx, landmarks, HAND_CONNECTIONS);
+          drawLandmarks(ctx, landmarks, { radius: 2 });
+        }
+      }
+    });
   });
 
   state.faceMesh = new FaceMesh({
@@ -199,6 +223,18 @@ async function setupVisionEngines() {
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5,
   });
+  state.faceMesh.onResults((results) => {
+    drawFrame(results.image, (ctx) => {
+      if (results.multiFaceLandmarks) {
+        for (const landmarks of results.multiFaceLandmarks) {
+          drawConnectors(ctx, landmarks, FACEMESH_TESSELATION);
+          drawConnectors(ctx, landmarks, FACEMESH_CONTOURS, { lineWidth: 1.2 });
+        }
+      }
+    });
+  });
+
+  state.visionReady = true;
 }
 
 function drawFrame(image, drawCb) {
@@ -211,54 +247,50 @@ function drawFrame(image, drawCb) {
 }
 
 async function processVision() {
-  if (state.mode === 'hands') {
-    state.hands.onResults((results) => {
-      drawFrame(results.image, (ctx) => {
-        if (results.multiHandLandmarks) {
-          for (const landmarks of results.multiHandLandmarks) {
-            drawConnectors(ctx, landmarks, HAND_CONNECTIONS);
-            drawLandmarks(ctx, landmarks, { radius: 2 });
-          }
-        }
-      });
-    });
-    await state.hands.send({ image: el.inputVideo });
-    return;
+  try {
+    if (state.mode === 'hands' && state.hands) {
+      await state.hands.send({ image: el.inputVideo });
+      return;
+    }
+    if (state.mode === 'face' && state.faceMesh) {
+      await state.faceMesh.send({ image: el.inputVideo });
+      return;
+    }
+    drawFrame(el.inputVideo);
+  } catch (err) {
+    console.warn('Error en processVision:', err);
+    drawFrame(el.inputVideo);
   }
-
-  if (state.mode === 'face') {
-    state.faceMesh.onResults((results) => {
-      drawFrame(results.image, (ctx) => {
-        if (results.multiFaceLandmarks) {
-          for (const landmarks of results.multiFaceLandmarks) {
-            drawConnectors(ctx, landmarks, FACEMESH_TESSELATION);
-            drawConnectors(ctx, landmarks, FACEMESH_CONTOURS, { lineWidth: 1.2 });
-          }
-        }
-      });
-    });
-    await state.faceMesh.send({ image: el.inputVideo });
-    return;
-  }
-
-  drawFrame(el.inputVideo);
 }
 
 async function startCamera() {
   if (state.camera) return;
 
-  await setupVisionEngines();
+  if (typeof Camera === 'undefined') {
+    speak('MediaPipe Camera no está disponible');
+    el.visionStatus.value = 'Error: MediaPipe no cargado';
+    return;
+  }
 
-  state.camera = new Camera(el.inputVideo, {
-    onFrame: processVision,
-    width: 640,
-    height: 480,
-  });
+  try {
+    await setupVisionEngines();
 
-  state.camera.start();
-  el.visionStatus.value = 'Cámara activa';
-  await addHistory('camera', 'Cámara iniciada');
-  await refreshData();
+    state.camera = new Camera(el.inputVideo, {
+      onFrame: processVision,
+      width: 640,
+      height: 480,
+    });
+
+    await state.camera.start();
+    el.visionStatus.value = 'Cámara activa';
+    await addHistory('camera', 'Cámara iniciada');
+    await refreshData();
+  } catch (err) {
+    console.error('Error al iniciar cámara:', err);
+    state.camera = null;
+    el.visionStatus.value = 'Error al iniciar cámara';
+    speak('No se pudo iniciar la cámara. Revisa los permisos.');
+  }
 }
 
 async function stopCamera() {
@@ -266,6 +298,14 @@ async function stopCamera() {
 
   state.camera.stop();
   state.camera = null;
+
+  const tracks = el.inputVideo.srcObject?.getTracks();
+  if (tracks) tracks.forEach((t) => t.stop());
+  el.inputVideo.srcObject = null;
+
+  const ctx = el.outputCanvas.getContext('2d');
+  ctx.clearRect(0, 0, el.outputCanvas.width, el.outputCanvas.height);
+
   el.visionStatus.value = 'Cámara detenida';
   await addHistory('camera', 'Cámara detenida');
   await refreshData();
@@ -303,11 +343,18 @@ function createRecognition() {
   recognition.onstart = () => {
     state.listening = true;
     setAssistantState('Asistente escuchando...');
+    el.listenBtn.disabled = true;
   };
 
   recognition.onend = () => {
     state.listening = false;
+    if (!state.stoppingRecognition) {
+      try { recognition.start(); } catch { /* ya iniciado */ }
+      return;
+    }
+    state.stoppingRecognition = false;
     setAssistantState('Asistente inactivo');
+    el.listenBtn.disabled = false;
   };
 
   recognition.onerror = async (e) => {
@@ -386,11 +433,18 @@ el.listenBtn.addEventListener('click', () => {
     alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
     return;
   }
-  state.recognition.start();
+  if (state.listening) return;
+  state.stoppingRecognition = false;
+  try {
+    state.recognition.start();
+  } catch (err) {
+    console.warn('Error al iniciar reconocimiento:', err);
+  }
 });
 
 el.stopListenBtn.addEventListener('click', () => {
   if (state.recognition && state.listening) {
+    state.stoppingRecognition = true;
     state.recognition.stop();
   }
 });

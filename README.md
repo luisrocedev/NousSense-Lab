@@ -14,34 +14,34 @@
 
 ## Características principales
 
-| Módulo | Descripción |
-|--------|-------------|
-| **Voz → Texto** | Reconocimiento continuo en español con `SpeechRecognition` y barra de confianza coloreada. |
-| **Texto → Voz** | Síntesis de habla con `speechSynthesis` para respuestas del asistente. |
-| **Waveform en tiempo real** | Visualización de la onda de audio del micrófono con Web Audio API. |
-| **Cámara + MediaPipe** | Detección de manos (21 landmarks) y cara (468+ puntos) sobre canvas con overlay LIVE y FPS. |
-| **Comandos naturales** | 10 comandos de voz: cambio de modo, cámara, captura, notas, lectura, borrado. |
-| **Persistencia IndexedDB** | Historial, notas y capturas persistentes entre sesiones con conexión singleton. |
-| **Sistema de pestañas** | Tres tabs: Principal, Historial y Referencia de comandos. |
-| **KPI en tiempo real** | 4 métricas: transcripciones, síntesis, capturas y notas. |
-| **Dark mode dual** | Toggle manual con `localStorage` + detección automática OS (`prefers-color-scheme`). |
-| **Toasts** | Notificaciones temporales con 4 tonos: éxito, error, info, aviso. |
-| **Diálogo de confirmación** | Reemplazo de `window.confirm()` por modal HTML/CSS accesible. |
-| **Exportación JSON** | Descarga de notas como archivo `.json`. |
+| Módulo                      | Descripción                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| **Voz → Texto**             | Reconocimiento continuo en español con `SpeechRecognition` y barra de confianza coloreada.  |
+| **Texto → Voz**             | Síntesis de habla con `speechSynthesis` para respuestas del asistente.                      |
+| **Waveform en tiempo real** | Visualización de la onda de audio del micrófono con Web Audio API.                          |
+| **Cámara + MediaPipe**      | Detección de manos (21 landmarks) y cara (468+ puntos) sobre canvas con overlay LIVE y FPS. |
+| **Comandos naturales**      | 10 comandos de voz: cambio de modo, cámara, captura, notas, lectura, borrado.               |
+| **Persistencia IndexedDB**  | Historial, notas y capturas persistentes entre sesiones con conexión singleton.             |
+| **Sistema de pestañas**     | Tres tabs: Principal, Historial y Referencia de comandos.                                   |
+| **KPI en tiempo real**      | 4 métricas: transcripciones, síntesis, capturas y notas.                                    |
+| **Dark mode dual**          | Toggle manual con `localStorage` + detección automática OS (`prefers-color-scheme`).        |
+| **Toasts**                  | Notificaciones temporales con 4 tonos: éxito, error, info, aviso.                           |
+| **Diálogo de confirmación** | Reemplazo de `window.confirm()` por modal HTML/CSS accesible.                               |
+| **Exportación JSON**        | Descarga de notas como archivo `.json`.                                                     |
 
 ## Comandos de voz
 
-| Comando | Acción |
-|---------|--------|
-| `modo manos` | Activa detección de manos. |
-| `modo cara` | Activa detección facial. |
-| `modo normal` | Desactiva detección, vista directa de cámara. |
-| `iniciar cámara` | Enciende la cámara y el canvas. |
-| `detener cámara` / `parar cámara` | Apaga la cámara y libera recursos. |
-| `capturar` | Guarda snapshot del canvas en IndexedDB. |
-| `guardar nota ...` | Guarda una nota de texto dictada. |
-| `leer notas` | Lee en voz alta la última nota guardada. |
-| `eliminar notas` | Borra todas las notas (con diálogo de confirmación). |
+| Comando                           | Acción                                               |
+| --------------------------------- | ---------------------------------------------------- |
+| `modo manos`                      | Activa detección de manos.                           |
+| `modo cara`                       | Activa detección facial.                             |
+| `modo normal`                     | Desactiva detección, vista directa de cámara.        |
+| `iniciar cámara`                  | Enciende la cámara y el canvas.                      |
+| `detener cámara` / `parar cámara` | Apaga la cámara y libera recursos.                   |
+| `capturar`                        | Guarda snapshot del canvas en IndexedDB.             |
+| `guardar nota ...`                | Guarda una nota de texto dictada.                    |
+| `leer notas`                      | Lee en voz alta la última nota guardada.             |
+| `eliminar notas`                  | Borra todas las notas (con diálogo de confirmación). |
 
 ## Arquitectura
 

@@ -14,86 +14,160 @@
 </head>
 <body>
   <main class="shell">
+    <!-- Header -->
     <section class="panel header">
-      <div>
-        <h1>NousSense Lab</h1>
-        <p>Interfaz natural: reconocimiento de voz + síntesis + cámara con detección de manos/cara y persistencia en IndexedDB.</p>
+      <div class="header-left">
+        <h1>🎙️ NousSense Lab</h1>
+        <p>Interfaz natural: voz + síntesis + cámara con detección de manos/cara y persistencia en IndexedDB.</p>
       </div>
-      <div id="assistantState" class="badge">Asistente inactivo</div>
+      <div class="header-right">
+        <div id="assistantState" class="badge badge-idle"><span class="badge-dot"></span> Asistente inactivo</div>
+        <button id="darkModeBtn" class="icon-btn" aria-label="Alternar modo oscuro">🌙</button>
+      </div>
     </section>
 
-    <section class="grid-two">
-      <article class="panel">
-        <h2>Control de voz</h2>
-        <div class="actions">
-          <button id="listenBtn" aria-label="Iniciar reconocimiento de voz">🎙️ Escuchar</button>
-          <button id="stopListenBtn" class="secondary" aria-label="Detener reconocimiento de voz">Detener</button>
-        </div>
-        <label>Texto reconocido
-          <textarea id="recognizedText" rows="3" placeholder="Aquí aparecerá la frase reconocida..."></textarea>
-        </label>
-        <label>Respuesta hablada
-          <input id="speakText" placeholder="Escribe y pulsa hablar o usa comandos de voz">
-        </label>
-        <div class="actions">
-          <button id="speakBtn" class="secondary" aria-label="Sintetizar texto a voz">🔊 Hablar</button>
-          <button id="stopSpeakBtn" class="secondary" aria-label="Silenciar síntesis de voz">Silenciar</button>
-        </div>
-
-        <h3>Comandos de voz soportados</h3>
-        <ul class="commands">
-          <li><code>modo manos</code> / <code>modo cara</code> / <code>modo normal</code></li>
-          <li><code>iniciar cámara</code> / <code>detener cámara</code></li>
-          <li><code>capturar</code> (guarda imagen en BD local)</li>
-          <li><code>guardar nota ...</code> (ej: guardar nota revisar mediapipe)</li>
-          <li><code>leer notas</code> / <code>eliminar notas</code></li>
-        </ul>
-      </article>
-
-      <article class="panel">
-        <h2>Visión por cámara</h2>
-        <div class="actions">
-          <button id="startCamBtn" aria-label="Iniciar cámara">📷 Iniciar cámara</button>
-          <button id="stopCamBtn" class="secondary" aria-label="Apagar cámara">Apagar cámara</button>
-        </div>
-        <div class="row">
-          <label>Modo de detección
-            <select id="modeSelect">
-              <option value="none">Normal</option>
-              <option value="hands">Manos</option>
-              <option value="face">Cara</option>
-            </select>
-          </label>
-          <label>Último estado
-            <input id="visionStatus" readonly value="Sin iniciar">
-          </label>
-        </div>
-        <video id="inputVideo" autoplay playsinline muted hidden></video>
-        <canvas id="outputCanvas" width="640" height="480"></canvas>
-      </article>
+    <!-- KPI bar -->
+    <section class="kpi-bar">
+      <div class="kpi kpi-blue"><span id="kpiVoice">0</span> Comandos voz</div>
+      <div class="kpi kpi-green"><span id="kpiNotes">0</span> Notas</div>
+      <div class="kpi kpi-amber"><span id="kpiCaptures">0</span> Capturas</div>
+      <div class="kpi kpi-red"><span id="kpiEvents">0</span> Eventos</div>
     </section>
 
-    <section class="grid-two">
-      <article class="panel">
-        <h2>Notas y memoria (IndexedDB)</h2>
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="main">Principal</button>
+      <button class="tab" data-tab="history">Historial</button>
+      <button class="tab" data-tab="commands">Comandos</button>
+    </nav>
+
+    <!-- Tab: Principal -->
+    <div id="tab-main" class="tab-content active">
+      <section class="grid-two">
+        <article class="panel">
+          <h2>Control de voz</h2>
+          <div class="actions">
+            <button id="listenBtn" aria-label="Iniciar reconocimiento de voz">🎙️ Escuchar</button>
+            <button id="stopListenBtn" class="secondary" aria-label="Detener reconocimiento de voz">Detener</button>
+          </div>
+          <canvas id="waveformCanvas" width="400" height="60"></canvas>
+          <div id="confidenceBar" class="confidence-bar" hidden>
+            <div class="confidence-fill" id="confidenceFill"></div>
+            <span id="confidenceLabel">0%</span>
+          </div>
+          <label>Texto reconocido
+            <textarea id="recognizedText" rows="3" placeholder="Aquí aparecerá la frase reconocida..."></textarea>
+          </label>
+          <label>Respuesta hablada
+            <input id="speakText" placeholder="Escribe y pulsa hablar o usa comandos de voz">
+          </label>
+          <div class="actions">
+            <button id="speakBtn" class="secondary" aria-label="Sintetizar texto a voz">🔊 Hablar</button>
+            <button id="stopSpeakBtn" class="secondary" aria-label="Silenciar síntesis de voz">Silenciar</button>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Visión por cámara</h2>
+          <div class="actions">
+            <button id="startCamBtn" aria-label="Iniciar cámara">📷 Iniciar cámara</button>
+            <button id="stopCamBtn" class="secondary" aria-label="Apagar cámara">Apagar cámara</button>
+            <button id="captureBtn" class="secondary" aria-label="Capturar imagen">📸 Capturar</button>
+          </div>
+          <div class="row">
+            <label>Modo de detección
+              <select id="modeSelect">
+                <option value="none">Normal</option>
+                <option value="hands">Manos</option>
+                <option value="face">Cara</option>
+              </select>
+            </label>
+            <label>Último estado
+              <input id="visionStatus" readonly value="Sin iniciar">
+            </label>
+          </div>
+          <div class="camera-wrapper">
+            <video id="inputVideo" autoplay playsinline muted hidden></video>
+            <canvas id="outputCanvas" width="640" height="480"></canvas>
+            <div id="cameraPlaceholder" class="camera-placeholder">📷 Pulsa "Iniciar cámara" para comenzar</div>
+            <div id="cameraOverlay" class="camera-overlay" hidden>
+              <span class="live-dot">● LIVE</span>
+              <span id="overlayMode">Normal</span>
+              <span id="overlayFps">0 FPS</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="grid-two">
+        <article class="panel">
+          <h2>Notas y memoria (IndexedDB)</h2>
+          <div class="actions">
+            <button id="reloadDataBtn" class="secondary">Recargar</button>
+            <button id="exportNotesBtn" class="secondary" aria-label="Exportar notas">⬇ Exportar</button>
+            <button id="clearNotesBtn" class="secondary">Vaciar notas</button>
+          </div>
+          <div id="notesList" class="list"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Capturas guardadas</h2>
+          <div id="capturesGrid" class="captures"></div>
+        </article>
+      </section>
+    </div>
+
+    <!-- Tab: Historial -->
+    <div id="tab-history" class="tab-content">
+      <section class="panel">
         <div class="actions">
-          <button id="reloadDataBtn" class="secondary">Recargar</button>
           <button id="clearHistoryBtn" class="secondary">Vaciar historial</button>
         </div>
-        <div id="notesList" class="list"></div>
-      </article>
+        <div id="historyList" class="list list-tall"></div>
+      </section>
+    </div>
 
-      <article class="panel">
-        <h2>Historial de comandos y eventos</h2>
-        <div id="historyList" class="list"></div>
-      </article>
-    </section>
+    <!-- Tab: Comandos -->
+    <div id="tab-commands" class="tab-content">
+      <section class="panel">
+        <h2>Referencia rápida de comandos de voz</h2>
+        <table class="commands-table">
+          <thead><tr><th>Comando</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td><code>modo manos</code></td><td>Activa detección de manos</td></tr>
+            <tr><td><code>modo cara</code></td><td>Activa detección facial</td></tr>
+            <tr><td><code>modo normal</code></td><td>Desactiva detección</td></tr>
+            <tr><td><code>iniciar cámara</code></td><td>Enciende la cámara</td></tr>
+            <tr><td><code>detener cámara</code></td><td>Apaga la cámara</td></tr>
+            <tr><td><code>capturar</code></td><td>Guarda snapshot en IndexedDB</td></tr>
+            <tr><td><code>guardar nota ...</code></td><td>Guarda nota de texto dictada</td></tr>
+            <tr><td><code>leer notas</code></td><td>Lee la última nota en voz alta</td></tr>
+            <tr><td><code>eliminar notas</code></td><td>Borra todas las notas</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
 
-    <section class="panel">
-      <h2>Capturas guardadas</h2>
-      <div id="capturesGrid" class="captures"></div>
-    </section>
+    <!-- Footer -->
+    <footer class="footer">
+      NousSense Lab · DAM2 — Desarrollo de interfaces · 2026
+    </footer>
   </main>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Custom confirm overlay -->
+  <div id="confirmOverlay" class="confirm-overlay" hidden>
+    <div class="confirm-dialog">
+      <h3 id="confirmTitle">Confirmar</h3>
+      <p id="confirmMessage">¿Estás seguro?</p>
+      <div class="actions">
+        <button id="confirmOk">Aceptar</button>
+        <button id="confirmCancel" class="secondary">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="assets/app.js"></script>
   <noscript><p style="text-align:center;padding:2rem;">NousSense Lab requiere JavaScript habilitado.</p></noscript>
